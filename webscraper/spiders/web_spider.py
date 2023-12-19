@@ -5,13 +5,17 @@ class WebSpiderSpider(scrapy.Spider):
     name = "web_spider"
     start_urls = []
     allowed_domains = []
+    unique_links = set()
     
     def __init__(self, filename=None):
         if filename:
             with open(filename, 'r') as f:
                 for url in f.readlines():
-                    self.start_urls.append(url.strip())
-                    self.allowed_domains.append(urlparse(url).netloc)
+                    self.unique_links.add(url.strip())
+
+        self.start_urls = list(self.unique_links)
+        for url in self.start_urls:
+            self.allowed_domains.append(urlparse(url).netloc)
 
     def parse(self, response):
         business_type = ''
@@ -41,6 +45,7 @@ class WebSpiderSpider(scrapy.Spider):
             'title': ' '.join(response.css('span#productTitle::text').get().split()),
             'category': ' '.join(response.xpath("//li[@class='a-breadcrumb-divider'][last()]/following::li[1]//span//a/text()").get().split()),
             'main_category': ' '.join(response.xpath("//li[@class='a-breadcrumb-divider'][last()]/preceding-sibling::li[1]//span//a/text()").get().split()),
-            'product_rating': response.xpath("//span[@class='a-icon-alt']/text()")[2].extract()
+            'product_rating': response.xpath("//span[@class='a-icon-alt']/text()")[2].extract(),
+            'price': "$"+ ''.join(response.xpath("//span[@class='a-price-whole']/text()")[1].get().strip())
         }
 
